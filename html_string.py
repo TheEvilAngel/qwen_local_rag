@@ -3,7 +3,7 @@ main_html = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>阿里云本地RAG解决方案</title>
+    <title>RAG解决方案</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <style>
         body {
@@ -35,6 +35,7 @@ main_html = """<!DOCTYPE html>
         }
         h1 {
             color: #333;
+            font-size: 1.5em;
         }
         p {
             color: #666;
@@ -67,16 +68,14 @@ main_html = """<!DOCTYPE html>
 </head>
 <body>
     <header>
-        <h1>阿里云本地RAG解决方案</h1>
+        <h1>RAG解决方案</h1>
     </header>
     <main>
-        <p>如果您需要基于上传的文档与模型直接对话，请直接访问<a href="/chat">RAG问答</a>，并在输入框位置上传文件，就可以开始对话了。（此次上传的数据在页面刷新后无法保留，若您希望可以持久使用、维护知识库，请创建知识库）。</p>
-        <p>如果您需要创建或更新知识库，请按照<a href="/upload_data">上传数据</a>、<a href="/create_knowledge_base">创建知识库</a>操作，在<a href="/chat">RAG问答</a>中的“知识库选择”位置选择您需要使用的知识库。</p>
-        <p>如果您需要基于已创建好的知识库进行问答，请直接访问<a href="/chat">RAG问答</a>，在“加载知识库”处选择您已创建的知识库。</p>
+        <p>请按照以下步骤操作：</p>
         <ul>
-            <li><a href="/upload_data"><span class="material-icons"></span> 1. 上传数据</a></li>
-            <li><a href="/create_knowledge_base"><span class="material-icons"></span> 2. 创建知识库</a></li>
-            <li><a href="/chat"><span class="material-icons"></span> 3. RAG问答</a></li>
+            <li><a href="/upload_data"><span class="material-icons">cloud_upload</span> 1. 上传数据</a></li>
+            <li><a href="/create_knowledge_base"><span class="material-icons">library_add</span> 2. 创建知识库</a></li>
+            <li><a href="/chat"><span class="material-icons">question_answer</span> 3. RAG问答</a></li>
         </ul>
     </main>
 </body>
