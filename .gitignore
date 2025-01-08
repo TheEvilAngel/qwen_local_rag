@@ -1,0 +1,26 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp 
+
+.DS_Store
