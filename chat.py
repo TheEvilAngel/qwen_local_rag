@@ -1,24 +1,38 @@
 import os
+from Config import Config
+os.environ["CUDA_VISIBLE_DEVICES"] = Config.CUDA_VISIBLE_DEVICES
 from openai import OpenAI
 from llama_index.core import StorageContext,load_index_from_storage,Settings
-from llama_index.embeddings.dashscope import (
-    DashScopeEmbedding,
-    DashScopeTextEmbeddingModels,
-    DashScopeTextEmbeddingType,
-)
-from llama_index.postprocessor.dashscope_rerank import DashScopeRerank
+# from llama_index.embeddings.dashscope import (
+#     DashScopeEmbedding,
+#     DashScopeTextEmbeddingModels,
+#     DashScopeTextEmbeddingType,
+# )
+# from llama_index.postprocessor.dashscope_rerank import DashScopeRerank
 from create_kb import *
 DB_PATH = "VectorStore"
 TMP_NAME = "tmp_abcd"
-EMBED_MODEL = DashScopeEmbedding(
-    model_name=DashScopeTextEmbeddingModels.TEXT_EMBEDDING_V2,
-    text_type=DashScopeTextEmbeddingType.TEXT_TYPE_DOCUMENT,
-)
+# EMBED_MODEL = DashScopeEmbedding(
+#     model_name=DashScopeTextEmbeddingModels.TEXT_EMBEDDING_V2,
+#     text_type=DashScopeTextEmbeddingType.TEXT_TYPE_DOCUMENT,
+# )
 # 若使用本地嵌入模型，请取消以下注释：
 # from langchain_community.embeddings import ModelScopeEmbeddings
 # from llama_index.embeddings.langchain import LangchainEmbedding
 # embeddings = ModelScopeEmbeddings(model_id="modelscope/iic/nlp_gte_sentence-embedding_chinese-large")
 # EMBED_MODEL = LangchainEmbedding(embeddings)
+
+# 使用本地模型BAAI/bge-m3
+MODEL_PATH = "/home/chenzihong/doc/qwen_local_rag/models/embedding_model/hub/models--BAAI--bge-m3/snapshots/5617a9f61b028005a4858fdac845db406aefb181"
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+EMBED_MODEL = HuggingFaceEmbedding(model_name=MODEL_PATH)
+from llama_index.postprocessor.flag_embedding_reranker import FlagEmbeddingReranker
+RRANK_PATH = "/home/chenzihong/doc/qwen_local_rag/models/embedding_model/hub/models--BAAI--bge-reranker-v2-m3/snapshots/953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"
+reranker = FlagEmbeddingReranker(
+    top_n=3,
+    model=RRANK_PATH,
+    use_fp16=False
+)
 
 # 设置嵌入模型
 Settings.embed_model = EMBED_MODEL
@@ -36,20 +50,35 @@ def get_model_response(multi_modal_input,history,model,temperature,max_tokens,hi
     # 获取index
     print(f"prompt:{prompt},tmp_files:{tmp_files},db_name:{db_name}")
     try:
-        dashscope_rerank = DashScopeRerank(top_n=chunk_cnt,return_documents=True)
-        storage_context = StorageContext.from_defaults(
+        # dashscope_rerank = DashScopeRerank(top_n=chunk_cnt,return_documents=True)
+        storage_context = StorageContext.from_defaults( # 获取storage_context，与index.storage_context相关联
             persist_dir=os.path.join(DB_PATH,db_name)
         )
         index = load_index_from_storage(storage_context)
         print("index获取完成")
-        retriever_engine = index.as_retriever(
+        retriever_engine = index.as_retriever( # 获取retriever, 开始rag
             similarity_top_k=20,
         )
         # 获取chunk
         retrieve_chunk = retriever_engine.retrieve(prompt)
         print(f"原始chunk为：{retrieve_chunk}")
         try:
-            results = dashscope_rerank.postprocess_nodes(retrieve_chunk, query_str=prompt)
+            # results = dashscope_rerank.postprocess_nodes(retrieve_chunk, query_str=prompt)
+            results = reranker.postprocess_nodes(retrieve_chunk, query_str=prompt)
+            
+            # 根据结果进行归一化, 修改库函数更好
+            # # 提取所有分数
+            # scores = [result.score for result in results]
+            # print(f"分数为：{scores}")
+            # # 计算最小值和最大值
+            # min_score = min(scores)
+            # max_score = max(scores)
+            # # 归一化分数
+            # for result in results:
+            #     if max_score > min_score:  # 确保分母不为零
+            #         result.score = (result.score - min_score) / (max_score - min_score)
+            #     else:
+            #         result.score = 0.0  # 如果所有分数相同，归一化为0
             print(f"rerank成功，重排后的chunk为：{results}")
         except:
             results = retrieve_chunk[:chunk_cnt]

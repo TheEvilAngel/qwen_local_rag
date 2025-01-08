@@ -1,31 +1,42 @@
 #####################################
 ######       创建知识库         #######
 #####################################
-import gradio as gr
+from Config import Config
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = Config.CUDA_VISIBLE_DEVICES
+import gradio as gr
 import shutil
 from llama_index.core import VectorStoreIndex,Settings,SimpleDirectoryReader
-from llama_index.embeddings.dashscope import (
-    DashScopeEmbedding,
-    DashScopeTextEmbeddingModels,
-    DashScopeTextEmbeddingType,
-)
+# from llama_index.embeddings.dashscope import (
+#     DashScopeEmbedding,
+#     DashScopeTextEmbeddingModels,
+#     DashScopeTextEmbeddingType,
+# )
 from llama_index.core.schema import TextNode
 from upload_file import *
 DB_PATH = "VectorStore"
 STRUCTURED_FILE_PATH = "File/Structured"
 UNSTRUCTURED_FILE_PATH = "File/Unstructured"
 TMP_NAME = "tmp_abcd"
-EMBED_MODEL = DashScopeEmbedding(
-    model_name=DashScopeTextEmbeddingModels.TEXT_EMBEDDING_V2,
-    text_type=DashScopeTextEmbeddingType.TEXT_TYPE_DOCUMENT,
-)
+# 若使用dashscope嵌入模型，请取消以下注释：
+# EMBED_MODEL = DashScopeEmbedding(
+#     model_name=DashScopeTextEmbeddingModels.TEXT_EMBEDDING_V2,
+#     text_type=DashScopeTextEmbeddingType.TEXT_TYPE_DOCUMENT,
+# )
 # 若使用本地嵌入模型，请取消以下注释：
 # from langchain_community.embeddings import ModelScopeEmbeddings
 # from llama_index.embeddings.langchain import LangchainEmbedding
 # embeddings = ModelScopeEmbeddings(model_id="modelscope/iic/nlp_gte_sentence-embedding_chinese-large")
 # EMBED_MODEL = LangchainEmbedding(embeddings)
 
+# 使用本地模型BAAI/bge-m3
+MODEL_PATH = "/home/chenzihong/doc/qwen_local_rag/models/embedding_model/hub/models--BAAI--bge-m3/snapshots/5617a9f61b028005a4858fdac845db406aefb181"
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.core.node_parser import SentenceSplitter
+EMBED_MODEL = HuggingFaceEmbedding(model_name=MODEL_PATH)
+
+# 设置文件名元数据，用于index
+filename_fn = lambda filename: {"file_name": filename}
 
 # 设置嵌入模型
 Settings.embed_model = EMBED_MODEL
@@ -48,14 +59,16 @@ def create_unstructured_db(db_name:str,label_name:list):
         documents = []
         for label in label_name:
             label_path = os.path.join(UNSTRUCTURED_FILE_PATH,label)
-            documents.extend(SimpleDirectoryReader(label_path).load_data())
+            documents.extend(SimpleDirectoryReader(label_path,  file_metadata=filename_fn).load_data())
         index = VectorStoreIndex.from_documents(
-            documents
+            documents, 
+            # transformations=[SentenceSplitter(chunk_size=1024, chunk_overlap=20)], 
+            show_progress=True
         )
         db_path = os.path.join(DB_PATH,db_name)
         if not os.path.exists(db_path):
             os.mkdir(db_path)
-            index.storage_context.persist(db_path)
+            index.storage_context.persist(db_path) # 可以修改
         elif os.path.exists(db_path):
             pass
         gr.Info("知识库创建成功，可前往RAG问答进行提问")
@@ -86,7 +99,7 @@ def create_structured_db(db_name:str,data_table:list):
                 node = TextNode(text=chunk)
                 node.metadata = {'source': doc.get_doc_id(),'file_name':doc.metadata['file_name']}
                 nodes = nodes + [node]
-        index = VectorStoreIndex(nodes)
+        index = VectorStoreIndex(nodes, show_progress=True)
         db_path = os.path.join(DB_PATH,db_name)
         if not os.path.exists(db_path):
             os.mkdir(db_path)
