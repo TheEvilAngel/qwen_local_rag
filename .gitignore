@@ -26,10 +26,10 @@ ENV/
 .DS_Store
 
 VectorStore/*
-
+!VectorStore/.gitkeep
 
 models/*
 
 
 File/*
-
+!File/.gitkeep
