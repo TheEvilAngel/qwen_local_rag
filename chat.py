@@ -23,14 +23,12 @@ TMP_NAME = "tmp_abcd"
 # EMBED_MODEL = LangchainEmbedding(embeddings)
 
 # 使用本地模型BAAI/bge-m3
-MODEL_PATH = "/home/chenzihong/doc/qwen_local_rag/models/embedding_model/hub/models--BAAI--bge-m3/snapshots/5617a9f61b028005a4858fdac845db406aefb181"
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-EMBED_MODEL = HuggingFaceEmbedding(model_name=MODEL_PATH)
+EMBED_MODEL = HuggingFaceEmbedding(model_name=Config.EMBED_MODEL_PATH)
 from llama_index.postprocessor.flag_embedding_reranker import FlagEmbeddingReranker
-RRANK_PATH = "/home/chenzihong/doc/qwen_local_rag/models/embedding_model/hub/models--BAAI--bge-reranker-v2-m3/snapshots/953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"
 reranker = FlagEmbeddingReranker(
     top_n=3,
-    model=RRANK_PATH,
+    model=Config.RERANK_MODEL_PATH,
     use_fp16=False
 )
 
@@ -87,8 +85,8 @@ def get_model_response(multi_modal_input,history,model,temperature,max_tokens,hi
         chunk_show = ""
         for i in range(len(results)):
             if results[i].score >= similarity_threshold:
-                chunk_text = chunk_text + f"## {i+1}:\n {results[i].text}\n"
-                chunk_show = chunk_show + f"## {i+1}:\n {results[i].text}\nscore: {round(results[i].score,2)}\n"
+                chunk_text = chunk_text + f"## {i+1}:\n {results[i].metadata['file_name']}\n {results[i].text}\n"
+                chunk_show = chunk_show + f"## {i+1}:\n {results[i].metadata['file_name']}\n {results[i].text}\nscore: {round(results[i].score,2)}\n"
         print(f"已获取chunk：{chunk_text}")
         prompt_template = f"请参考以下内容：{chunk_text}，以合适的语气回答用户的问题：{prompt}。如果参考内容中有图片链接也请直接返回。"
     except Exception as e:

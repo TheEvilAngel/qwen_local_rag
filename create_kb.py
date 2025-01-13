@@ -30,10 +30,9 @@ TMP_NAME = "tmp_abcd"
 # EMBED_MODEL = LangchainEmbedding(embeddings)
 
 # 使用本地模型BAAI/bge-m3
-MODEL_PATH = "/home/chenzihong/doc/qwen_local_rag/models/embedding_model/hub/models--BAAI--bge-m3/snapshots/5617a9f61b028005a4858fdac845db406aefb181"
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.node_parser import SentenceSplitter
-EMBED_MODEL = HuggingFaceEmbedding(model_name=MODEL_PATH)
+EMBED_MODEL = HuggingFaceEmbedding(model_name=Config.EMBED_MODEL_PATH)
 
 # 设置文件名元数据，用于index
 filename_fn = lambda filename: {"file_name": filename}
@@ -88,7 +87,7 @@ def create_structured_db(db_name:str,data_table:list):
         documents = []
         for label in data_table:
             label_path = os.path.join(STRUCTURED_FILE_PATH,label)
-            documents.extend(SimpleDirectoryReader(label_path).load_data())
+            documents.extend(SimpleDirectoryReader(label_path, file_metadata=filename_fn).load_data())
         # index = VectorStoreIndex.from_documents(
         #     documents
         # )

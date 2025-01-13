@@ -25,6 +25,11 @@ ENV/
 
 .DS_Store
 
-File/
-VectorStore/
-models/
+VectorStore/*
+!VectorStore/
+
+models/*
+!models/
+
+File/*
+!File/
